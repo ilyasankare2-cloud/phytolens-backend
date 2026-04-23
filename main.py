@@ -11,7 +11,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-engine = InferenceEngine("model/phytolens_best.pt")
+engine = InferenceEngine("model/phytolens_v1.onnx")
 
 @app.get("/health")
 def health():
