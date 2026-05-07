@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 from inference import InferenceEngine
+from visual_traits import analyze as analyze_traits
 
 app = FastAPI(title="TrichAI API", version="1.4.0")
 
@@ -224,6 +225,7 @@ async def analyze(request: Request, file: UploadFile = File(...)):
         raise HTTPException(400, "Imagen demasiado grande. Máximo 10MB.")
     validate_image_magic(contents)
     result = engine.predict(contents)
+    result["visual_traits"] = analyze_traits(contents)
     record_analysis(result["label"])
     return {"success": True, "result": result}
 
