@@ -1,30 +1,30 @@
 # TrichAI Backend
 
-REST API for cannabis image classification. Built with FastAPI, runs inference locally using ONNX — no external AI calls.
+API REST para clasificación de imágenes de cannabis. Construida con FastAPI, la inferencia corre localmente en ONNX — sin llamadas a APIs externas de IA.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.136-green.svg)](https://fastapi.tiangolo.com)
 
-## How it works
+## Cómo funciona
 
-You send an image. The API runs it through a fine-tuned EfficientNetV2-S model (ONNX format) and returns the classification + a visual analysis computed directly from the pixels (trichome coverage, texture, cure level).
+Envías una imagen. La API la pasa por un modelo EfficientNetV2-S afinado (formato ONNX) y devuelve la clasificación junto con un análisis visual calculado directamente de los píxeles (cobertura de tricomas, textura, nivel de curación).
 
-Four categories: `bud` · `hash` · `other` · `plant`
+Cuatro categorías: `bud` · `hash` · `other` · `plant`
 
 ## Endpoints
 
 ```
-POST /analyze          → classify an image
-POST /contribute       → submit a labeled image
-GET  /stats            → analytics (requires x-api-key header)
-GET  /contribute/stats → contribution counts
-GET  /health           → service status
+POST /analyze          → clasifica una imagen
+POST /contribute       → envía una imagen etiquetada
+GET  /stats            → analytics (requiere header x-api-key)
+GET  /contribute/stats → conteo de contribuciones
+GET  /health           → estado del servicio
 ```
 
-### Example
+### Ejemplo
 
 ```bash
-curl -X POST https://your-api.railway.app/analyze -F "file=@photo.jpg"
+curl -X POST https://tu-api.railway.app/analyze -F "file=@foto.jpg"
 ```
 
 ```json
@@ -46,25 +46,25 @@ curl -X POST https://your-api.railway.app/analyze -F "file=@photo.jpg"
 }
 ```
 
-## Running locally
+## Ejecutar en local
 
 ```bash
 pip install -r requirements.txt
-# put your model at model/phytolens_v1.onnx
+# coloca tu modelo en model/phytolens_v1.onnx
 uvicorn main:app --reload
 ```
 
-Interactive docs at `http://localhost:8000/docs`
+Documentación interactiva en `http://localhost:8000/docs`
 
-## Environment variables
+## Variables de entorno
 
-| Variable | Description |
+| Variable | Descripción |
 |---|---|
-| `STATS_API_KEY` | Restricts access to `/stats` — set this |
-| `UPSTASH_REDIS_URL` | Persistent analytics (`rediss://...`). In-memory fallback if not set |
-| `R2_ENDPOINT` / `R2_ACCESS_KEY` / `R2_SECRET_KEY` | Cloudflare R2 for contribution storage. Local filesystem fallback if not set |
-| `R2_BUCKET` | Bucket name (default: `trichai-contributions`) |
+| `STATS_API_KEY` | Protege el acceso a `/stats` — configúrala siempre |
+| `UPSTASH_REDIS_URL` | Analytics persistentes (`rediss://...`). Sin ella, usa memoria |
+| `R2_ENDPOINT` / `R2_ACCESS_KEY` / `R2_SECRET_KEY` | Cloudflare R2 para almacenar contribuciones. Sin ellas, guarda en disco local |
+| `R2_BUCKET` | Nombre del bucket (por defecto: `trichai-contributions`) |
 
-## Security
+## Seguridad
 
-Requests are validated at three levels: Content-Length header (before the body is read), declared MIME type, and actual magic bytes. Rate limited to 20 requests/minute per IP.
+Las peticiones se validan en tres niveles: cabecera Content-Length (antes de leer el body), tipo MIME declarado y magic bytes reales del archivo. Límite de 20 peticiones por minuto por IP.
