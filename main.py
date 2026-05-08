@@ -12,7 +12,7 @@ from starlette.responses import Response
 from inference import InferenceEngine
 from visual_traits import analyze as analyze_traits
 
-app = FastAPI(title="TrichAI API", version="1.4.0")
+app = FastAPI(title="TrichAI API", version="1.5.0")
 
 app.add_middleware(
     CORSMiddleware,
