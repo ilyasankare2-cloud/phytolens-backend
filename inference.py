@@ -1,3 +1,4 @@
+import os
 import onnxruntime as ort
 import numpy as np
 from PIL import Image
@@ -37,6 +38,32 @@ CLASS_INFO = {
         "varieties":  ["Cannabis sativa", "Cannabis indica", "Cannabis ruderalis", "Híbrido"],
     },
 }
+
+
+def ensure_model_local(local_path: str, r2_key: str, s3_client, bucket: str):
+    """Download the model from R2 to local disk if not present.
+    Raises RuntimeError if download fails — backend cannot start without a model."""
+    if os.path.exists(local_path):
+        size_mb = os.path.getsize(local_path) / 1024 / 1024
+        print(f"[model] Using cached {local_path} ({size_mb:.1f} MB)")
+        return local_path
+
+    if s3_client is None:
+        raise RuntimeError(
+            f"Model not found at {local_path} and R2 client unavailable. "
+            "Set R2_ENDPOINT/R2_ACCESS_KEY/R2_SECRET_KEY env vars."
+        )
+
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    print(f"[model] Downloading {r2_key} from R2 -> {local_path} ...")
+    try:
+        s3_client.download_file(bucket, r2_key, local_path)
+    except Exception as e:
+        raise RuntimeError(f"Failed to download model {r2_key} from R2: {e}")
+    size_mb = os.path.getsize(local_path) / 1024 / 1024
+    print(f"[model] Downloaded {size_mb:.1f} MB")
+    return local_path
+
 
 class InferenceEngine:
     def __init__(self, model_path: str):

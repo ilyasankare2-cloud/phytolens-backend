@@ -9,10 +9,10 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-from inference import InferenceEngine
+from inference import InferenceEngine, ensure_model_local
 from visual_traits import analyze as analyze_traits
 
-app = FastAPI(title="TrichAI API", version="1.5.0")
+app = FastAPI(title="TrichAI API", version="1.6.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,10 +21,43 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-engine       = InferenceEngine("model/phytolens_v2.onnx")
 START_TIME   = time.time()
 VALID_LABELS = {"bud", "hash", "other", "plant"}
 MAX_BYTES    = 10 * 1024 * 1024  # 10 MB
+
+# ── R2 / S3 STORAGE ──────────────────────────────────────────────────────────
+# Single boto3 client used for BOTH model downloads and user contributions.
+R2_ENDPOINT   = os.getenv("R2_ENDPOINT", "")
+R2_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "")
+R2_SECRET_KEY = os.getenv("R2_SECRET_KEY", "")
+R2_BUCKET     = os.getenv("R2_BUCKET", "trichai-contributions")
+USE_R2 = all([R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY])
+
+if USE_R2:
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=R2_ENDPOINT,
+        aws_access_key_id=R2_ACCESS_KEY,
+        aws_secret_access_key=R2_SECRET_KEY,
+        config=Config(signature_version="s3v4"),
+        region_name="auto",
+    )
+else:
+    s3 = None
+    CONTRIB_DIR = "contributions"
+    os.makedirs(CONTRIB_DIR, exist_ok=True)
+    for _label in VALID_LABELS:
+        os.makedirs(os.path.join(CONTRIB_DIR, _label), exist_ok=True)
+
+
+# ── MODEL BOOTSTRAP ──────────────────────────────────────────────────────────
+# Model lives in R2 under MODEL_KEY (e.g. "models/phytolens_v2.onnx") and is
+# downloaded on startup to MODEL_CACHE if not already present. To deploy a new
+# model: upload to R2 then change MODEL_KEY env var + restart Railway.
+MODEL_KEY   = os.getenv("MODEL_KEY", "models/phytolens_v2.onnx")
+MODEL_CACHE = os.path.join("model", "cache", os.path.basename(MODEL_KEY))
+ensure_model_local(MODEL_CACHE, MODEL_KEY, s3, R2_BUCKET)
+engine = InferenceEngine(MODEL_CACHE)
 
 
 # ── MAX UPLOAD SIZE MIDDLEWARE (rejects oversized requests before reading body) ─
@@ -167,29 +200,6 @@ def get_analytics() -> dict:
         "uptime_hours":           uptime_h,
         "persistent":             redis is not None,
     }
-
-
-# ── R2 / S3 STORAGE ──────────────────────────────────────────────────────────
-R2_ENDPOINT   = os.getenv("R2_ENDPOINT", "")
-R2_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "")
-R2_SECRET_KEY = os.getenv("R2_SECRET_KEY", "")
-R2_BUCKET     = os.getenv("R2_BUCKET", "trichai-contributions")
-USE_R2 = all([R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY])
-
-if USE_R2:
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=R2_ENDPOINT,
-        aws_access_key_id=R2_ACCESS_KEY,
-        aws_secret_access_key=R2_SECRET_KEY,
-        config=Config(signature_version="s3v4"),
-        region_name="auto",
-    )
-else:
-    CONTRIB_DIR = "contributions"
-    os.makedirs(CONTRIB_DIR, exist_ok=True)
-    for _label in VALID_LABELS:
-        os.makedirs(os.path.join(CONTRIB_DIR, _label), exist_ok=True)
 
 
 def save_contribution(data: bytes, label: str, ext: str) -> str:

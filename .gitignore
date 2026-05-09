@@ -4,3 +4,8 @@ __pycache__/
 *.pyo
 .env
 contributions/
+
+# Model artifacts — live in Cloudflare R2, downloaded at startup (see TD-001 / inference.py)
+*.onnx
+*.pt
+model/cache/
