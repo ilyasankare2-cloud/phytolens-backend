@@ -83,7 +83,24 @@ def _get_ip(request: Request) -> str:
     )
 
 def check_rate(request: Request):
-    ip  = _get_ip(request)
+    """TD-002: backed by Redis when available (multi-worker safe), falls back to
+    in-memory if Redis is unreachable. Fixed-window counter via INCR + EXPIRE."""
+    ip = _get_ip(request)
+    if redis:
+        try:
+            key = f"rate:{ip}"
+            pipe = redis.pipeline()
+            pipe.incr(key)
+            pipe.expire(key, int(RATE_WINDOW))
+            count, _ = pipe.execute()
+            if count > RATE_LIMIT:
+                raise HTTPException(429, "Demasiadas solicitudes. Espera un momento.")
+            return
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[rate] Redis error, falling back to memory: {e}")
+            # fall through to in-memory below
     now = time.time()
     hits = [t for t in _rate_store[ip] if now - t < RATE_WINDOW]
     if len(hits) >= RATE_LIMIT:
