@@ -10,7 +10,7 @@ CLASS_INFO = {
         "display":    "Cogollo seco",
         "thc_min":    15,
         "thc_max":    30,
-        "description": "Flor seca de cannabis, la forma más común de consumo.",
+        "description": "Flor seca, lista para consumir. La forma más común de cannabis.",
         "varieties":  ["OG Kush", "Amnesia Haze", "Purple Haze", "White Widow", "Gorilla Glue", "Gelato", "Fruta Prohibida", "Static"],
     },
     1: {
@@ -18,7 +18,7 @@ CLASS_INFO = {
         "display":    "Hachís / Resina",
         "thc_min":    20,
         "thc_max":    60,
-        "description": "Concentrado de resina de cannabis prensada.",
+        "description": "Resina prensada. Más concentrado que la flor, suele moverse en rangos altos de THC.",
         "varieties":  ["Hash marroquí", "Charas", "Bubble hash", "Dry sift", "Hash libanés"],
     },
     2: {
@@ -34,7 +34,7 @@ CLASS_INFO = {
         "display":    "Planta viva",
         "thc_min":    10,
         "thc_max":    25,
-        "description": "Planta de cannabis en fase de crecimiento o floración.",
+        "description": "Planta viva. El THC se desarrolla durante la floración, el potencial real depende de la fase.",
         "varieties":  ["Cannabis sativa", "Cannabis indica", "Cannabis ruderalis", "Híbrido"],
     },
 }
