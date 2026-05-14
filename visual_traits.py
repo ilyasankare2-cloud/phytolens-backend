@@ -2,6 +2,10 @@ import numpy as np
 from PIL import Image
 import io
 
+# Same decompression-bomb cap as inference.py. Declared here too in case this
+# module is imported standalone.
+Image.MAX_IMAGE_PIXELS = 50_000_000
+
 
 def analyze(image_bytes: bytes) -> dict:
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")

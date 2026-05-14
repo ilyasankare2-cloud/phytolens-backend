@@ -4,6 +4,10 @@ import numpy as np
 from PIL import Image
 import io
 
+# Cap megapixels to mitigate decompression bombs (PNG/WebP can be tiny but
+# expand to GBs in RAM). Pillow raises DecompressionBombError above this.
+Image.MAX_IMAGE_PIXELS = 50_000_000
+
 CLASS_INFO = {
     0: {
         "label":      "bud",

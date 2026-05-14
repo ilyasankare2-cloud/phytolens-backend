@@ -14,11 +14,18 @@ from visual_traits import analyze as analyze_traits
 
 app = FastAPI(title="TrichAI API", version="1.6.0")
 
+_default_origins = (
+    "https://phytolens-frontend.vercel.app,"
+    "https://trichai-landing.vercel.app,"
+    "http://localhost:3000"
+)
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "x-api-key"],
 )
 
 START_TIME   = time.time()
@@ -121,12 +128,15 @@ def validate_image_magic(data: bytes):
 
 
 # ── STATS API KEY ─────────────────────────────────────────────────────────────
+import hmac
 STATS_KEY = os.getenv("STATS_API_KEY", "")
 
 def require_stats_key(request: Request):
+    # Fail-closed: if no key is configured, the endpoint is disabled, not open.
     if not STATS_KEY:
-        return
-    if request.headers.get("x-api-key", "") != STATS_KEY:
+        raise HTTPException(503, "Stats endpoint not configured.")
+    provided = request.headers.get("x-api-key", "")
+    if not hmac.compare_digest(provided, STATS_KEY):
         raise HTTPException(403, "Acceso denegado.")
 
 
